@@ -8,3 +8,8 @@ export const ArtworkSchema = z.object({
   date_start: z.number().nullable(),
   date_end: z.number().nullable(),
 });
+
+export const PaginatorSchema = z.object({
+  total: z.number(),
+  limit: z.number(),
+});
