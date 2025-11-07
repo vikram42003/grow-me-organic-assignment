@@ -6,7 +6,7 @@ A React + TypeScript web app built for the **GrowMeOrganic Private Limited** to 
 
 ## Live Demo
 
-> **Netlify:** 
+> **Netlify:** https://artworks-data-viewer-3ab104.netlify.app/
 
 ---
 
