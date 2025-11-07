@@ -14,11 +14,13 @@
 
 .pagination-button-active {
   background: #4f63da;
+  color: white;
+  border: #4f63da;
   cursor: none;
 }
 
 .pagination-button-disabled {
-  color: #878787;
-  border-color: #878787;
+  color: gray;
+  border-color: lightgray;
   cursor: not-allowed;
 }

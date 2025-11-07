@@ -30,30 +30,59 @@ const Table = ({ page, data, paginationData, setPage }: TableProps) => {
     textOverflow: "ellipsis",
   };
 
+  const totalPages = Math.ceil(paginationData.total / paginationData.limit);
+
   const paginatorTemplate = {
     layout: "CurrentPageReport PrevPageLink PageLinks NextPageLink",
     CurrentPageReport: () => {
       return (
         <span style={{ marginRight: "auto" }}>
-          Showing
-          <span style={{ fontWeight: 600 }}> {page} </span>
-          to
-          <span style={{ fontWeight: 600 }}> {page * 12} </span>
-          of
-          <span style={{ fontWeight: 600 }}> {paginationData.total} </span>
-          entries
+          {/* Just mathematically calculate the limits like page 13 to 24 */}
+          Showing <strong>{page * paginationData.limit - paginationData.limit + 1}</strong> to{" "}
+          <strong>{page * paginationData.limit}</strong> of <strong>{paginationData.total}</strong> entries
         </span>
       );
     },
     PrevPageLink: () => (
-      <button className={`pagination-button ${page === 1 && "pagination-button-disabled"}`} disabled={page === 1}>
+      <button
+        className={`pagination-button ${page === 1 ? "pagination-button-disabled" : ""}`}
+        disabled={page === 1}
+        onClick={() => page > 1 && setPage(page - 1)}
+      >
         Previous
       </button>
     ),
+    PageLinks: () => {
+      // Here we need to manually create the buttons and their values since we are doing server side pagination
+      const pagesToShow = 5;
+
+      let start = Math.max(1, page - 2);
+      const end = Math.min(totalPages, start + pagesToShow - 1);
+
+      // Adjust if we’re near the end
+      if (end - start < pagesToShow - 1) {
+        start = Math.max(1, end - pagesToShow + 1);
+      }
+
+      const pageButtons = [];
+      for (let i = start; i <= end; i++) {
+        pageButtons.push(
+          <button
+            key={i}
+            className={`pagination-button ${page === i ? "pagination-button-active" : ""}`}
+            onClick={() => setPage(i)}
+          >
+            {i}
+          </button>
+        );
+      }
+      return <>{pageButtons}</>;
+    },
     NextPageLink: () => (
       <button
-        className={`pagination-button ${page === paginationData.total && "pagination-button-disabled"}`}
-        disabled={page === paginationData.total}
+        className={`pagination-button ${page >= totalPages ? "pagination-button-disabled" : ""}`}
+        disabled={page >= totalPages}
+        onClick={() => page < totalPages && setPage(page + 1)}
       >
         Next
       </button>
@@ -70,6 +99,7 @@ const Table = ({ page, data, paginationData, setPage }: TableProps) => {
         tableStyle={tableStyle}
         stripedRows
         paginator
+        onPage={(e) => setPage(e.page! + 1)}
         rows={paginationData.limit}
         totalRecords={paginationData.total}
         paginatorTemplate={paginatorTemplate}
