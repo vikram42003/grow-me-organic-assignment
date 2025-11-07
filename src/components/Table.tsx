@@ -5,6 +5,7 @@ import { OverlayPanel } from "primereact/overlaypanel";
 
 import type { ArtworkType, PaginatorType } from "../types";
 import { InputText } from "primereact/inputtext";
+import { createSelectionPlan } from "../utils/selectionPlan";
 
 interface TableProps {
   page: number;
@@ -30,68 +31,47 @@ const Table = ({
   const op = useRef<OverlayPanel>(null);
   const [rowsToSelect, setRowsToSelect] = useState<number>();
 
-  // If we need to select stuff from this page (due to multi page select), then do that first
+  // If we need to select items from this page (due to multi page select), then do that first
   useEffect(() => {
-    console.log("USE EFFECT TRIGGERED");
     if (!selectionPlan.has(page)) return;
     if (!data || data.length === 0) return;
 
     const count = selectionPlan.get(page)!;
     const newSet = new Set(selectedArtworks);
-    // debugger;
-    // Strict: take first `count` rows from this page
-    console.log("BEFORE NEW SET", newSet);
-    console.log("DATA", data);
+
     data.slice(0, count).forEach((item) => newSet.add(item.id));
-    console.log("AFTER NEW SET", newSet);
 
     setSelectedArtworks(newSet);
 
     const newPlan = new Map(selectionPlan);
     newPlan.delete(page);
     setSelectionPlan(newPlan);
+
+    // We strictly need only these dependencies for the no-prefetch pagination to work, any more and it will cause race
+    // conditions and delete the key in map before can add NEW DATA to set
+    // any less and it wont trigger on cases on which it should trigger
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, selectionPlan]);
-
-  console.log("PAGE IS ", page);
-
-  console.log(selectionPlan);
-
-  const columns = [
-    { field: "title", header: "Title" },
-    { field: "place_of_origin", header: "Place of Origin" },
-    { field: "artist_display", header: "Artist" },
-    { field: "inscriptions", header: "Inscriptions" },
-    { field: "date_start", header: "Start Date" },
-    { field: "date_end", header: "End Date" },
-  ];
 
   if (data?.length === 0 || !paginationData) return <div>Loading...</div>;
   if (!data || !paginationData) return <div>No data to display</div>;
 
   const totalPages = Math.ceil(paginationData.total / paginationData.limit);
+  const currentPageSelectedArtworks = data.filter((item) => selectedArtworks.has(item.id));
+  let totalRows = selectedArtworks.size;
+  selectionPlan.forEach((value) => (totalRows += value));
 
+  // Selection plan business logic, it kinda needs to stay couple within Table, otherwise major refactoring would be needed, so im keeping it like this
+  // Described in detail in README.md
   const handleSelectionPlan = (n: number | undefined) => {
     if (!n || n <= 0 || !paginationData) return;
 
-    const pageSize = paginationData.limit;
-    const totalPages = Math.ceil(paginationData.total / pageSize);
-
-    const plan = new Map<number, number>();
-
-    let remaining = n;
-    let p = 1;
-
-    while (remaining > 0 && p <= totalPages) {
-      const take = Math.min(pageSize, remaining);
-      plan.set(p, take);
-      remaining -= take;
-      p++;
-    }
-
+    const plan = createSelectionPlan(n, totalPages, paginationData.limit);
     setSelectionPlan(plan);
     op.current?.hide();
   };
 
+  // Custom pagination, also cant really be taken out without major refactoring
   const paginatorTemplate = {
     layout: "CurrentPageReport PrevPageLink PageLinks NextPageLink",
     CurrentPageReport: () => {
@@ -145,7 +125,14 @@ const Table = ({
     ),
   };
 
-  const currentPageSelectedArtworks = data.filter((item) => selectedArtworks.has(item.id));
+  const columns = [
+    { field: "title", header: "Title" },
+    { field: "place_of_origin", header: "Place of Origin" },
+    { field: "artist_display", header: "Artist" },
+    { field: "inscriptions", header: "Inscriptions" },
+    { field: "date_start", header: "Start Date" },
+    { field: "date_end", header: "End Date" },
+  ];
 
   const tableStyle = {
     minWidth: "50rem",
@@ -157,7 +144,7 @@ const Table = ({
   return (
     <div>
       <p>
-        Selected: <span style={{ color: "blue" }}>{selectedArtworks.size}</span> rows
+        Selected: <span style={{ color: "blue" }}>{totalRows}</span> rows
       </p>
 
       <DataTable
@@ -174,18 +161,18 @@ const Table = ({
         selection={currentPageSelectedArtworks}
         onSelectionChange={(e) => {
           // This func only gives us the newly selected items, theres no way to know which items
-          // FROM THIS PAGE, we need to remove unless we do manual calculations like this
-          console.log("SELECTED ARTWORKS IN TABLE BEFORE", selectedArtworks);
+          // are FROM THIS PAGE, we need to remove unless we do manual calculations like this
           const newSet = new Set(selectedArtworks);
+
           // First deselect all from this page
           data.forEach((item) => newSet.delete(item.id));
+
           // Now add the freshly selected items
           e.value.forEach((item) => newSet.add(item.id));
-          console.log("SELECTED ARTWORKS IN TABLE BEFORE", newSet);
+
           setSelectedArtworks(newSet);
         }}
         dataKey="id"
-        // showSelectAll={false}
       >
         <Column
           header={
