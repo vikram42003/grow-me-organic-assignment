@@ -1,6 +1,6 @@
 # Artworks Data Viewer
 
-A React + TypeScript web app built for the **AppConnector Assignment** to display artworks from the Art Institute of Chicago API with server‑side pagination, performance safe multi‑page row selection.
+A React + TypeScript web app built for the **GrowMeOrganic Private Limited** to display artworks from the Art Institute of Chicago API with server‑side pagination, performance safe multi‑page row selection.
 
 ---
 
