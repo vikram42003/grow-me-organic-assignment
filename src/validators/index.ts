@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const ArtworkSchema = z.object({
+  id: z.number(),
   title: z.string(),
   place_of_origin: z.string().nullable(),
   artist_display: z.string().nullable(),

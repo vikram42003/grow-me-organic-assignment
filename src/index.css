@@ -24,3 +24,7 @@
   border-color: lightgray;
   cursor: not-allowed;
 }
+
+#table > div.p-paginator {
+  margin: 1.5rem 0;
+}

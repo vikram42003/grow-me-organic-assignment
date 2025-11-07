@@ -1,5 +1,8 @@
+import { useRef, useState } from "react";
 import { DataTable } from "primereact/datatable";
 import { Column } from "primereact/column";
+import { OverlayPanel } from "primereact/overlaypanel";
+
 import type { ArtworkType, PaginatorType } from "../types";
 
 interface TableProps {
@@ -7,28 +10,25 @@ interface TableProps {
   data: ArtworkType[] | null;
   paginationData: PaginatorType | null;
   setPage: (page: number) => void;
+  selectedArtworks: Set<number>;
+  setSelectedArtworks: (selectedArtworks: Set<number>) => void;
 }
 
-const Table = ({ page, data, paginationData, setPage }: TableProps) => {
+const Table = ({ page, data, paginationData, setPage, selectedArtworks, setSelectedArtworks }: TableProps) => {
+  const op = useRef<OverlayPanel>(null);
+  const [rowsToSelect, setRowsToSelect] = useState<number>(0);
+
   const columns = [
     { field: "title", header: "Title" },
     { field: "place_of_origin", header: "Place of Origin" },
-    { field: "artist_display", header: "Artist Display" },
+    { field: "artist_display", header: "Artist" },
     { field: "inscriptions", header: "Inscriptions" },
-    { field: "date_start", header: "Date Start" },
-    { field: "date_end", header: "Date End" },
+    { field: "date_start", header: "Start Date" },
+    { field: "date_end", header: "End Date" },
   ];
 
   if (data?.length === 0 || !paginationData) return <div>Loading...</div>;
-
   if (!data || !paginationData) return <div>No data to display</div>;
-
-  const tableStyle = {
-    minWidth: "50rem",
-    maxHeight: "100vh",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-  };
 
   const totalPages = Math.ceil(paginationData.total / paginationData.limit);
 
@@ -37,7 +37,6 @@ const Table = ({ page, data, paginationData, setPage }: TableProps) => {
     CurrentPageReport: () => {
       return (
         <span style={{ marginRight: "auto" }}>
-          {/* Just mathematically calculate the limits like page 13 to 24 */}
           Showing <strong>{page * paginationData.limit - paginationData.limit + 1}</strong> to{" "}
           <strong>{page * paginationData.limit}</strong> of <strong>{paginationData.total}</strong> entries
         </span>
@@ -53,13 +52,10 @@ const Table = ({ page, data, paginationData, setPage }: TableProps) => {
       </button>
     ),
     PageLinks: () => {
-      // Here we need to manually create the buttons and their values since we are doing server side pagination
       const pagesToShow = 5;
-
       let start = Math.max(1, page - 2);
       const end = Math.min(totalPages, start + pagesToShow - 1);
 
-      // Adjust if we’re near the end
       if (end - start < pagesToShow - 1) {
         start = Math.max(1, end - pagesToShow + 1);
       }
@@ -89,25 +85,113 @@ const Table = ({ page, data, paginationData, setPage }: TableProps) => {
     ),
   };
 
+  const currentPageSelectedArtworks = data.filter((item) => selectedArtworks.has(item.id));
+
+  const toggleSelectAllPage = () => {
+    const allSelected = data.every((item) => selectedArtworks.has(item.id));
+    const newSet = new Set(selectedArtworks);
+
+    if (allSelected) {
+      data.forEach((item) => newSet.delete(item.id));
+    } else {
+      data.forEach((item) => newSet.add(item.id));
+    }
+
+    setSelectedArtworks(newSet);
+  };
+
+  const selectNArtworks = (count?: number) => {
+    count = count || paginationData.limit;
+
+    const newSet = new Set(selectedArtworks);
+
+    data.slice(0, count).forEach((item) => newSet.add(item.id));
+
+    setSelectedArtworks(newSet);
+    op.current?.hide();
+  };
+
+  const tableStyle = {
+    minWidth: "50rem",
+    maxHeight: "100vh",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+  };
+
   return (
     <div>
-      {/* Here, we can use the loading and empty properties to show loading or empty list components 
-      but we transform the data above so we need to ensure it is there at the top of the component 
-      so we dont use the empty and loading properties here*/}
+      <p>
+        Selected: <span style={{ color: "blue" }}>{selectedArtworks.size}</span> rows
+      </p>
+
       <DataTable
         value={data}
+        id="table"
         tableStyle={tableStyle}
         stripedRows
         paginator
         onPage={(e) => setPage(e.page! + 1)}
         rows={paginationData.limit}
+        selectionMode="multiple"
         totalRecords={paginationData.total}
         paginatorTemplate={paginatorTemplate}
+        selection={currentPageSelectedArtworks}
+        onSelectionChange={(e) => {
+          // This func only gives us the newly selected items, theres no way to know which items
+          // FROM THIS PAGE, we need to remove unless we do manual calculations like this
+          const newSet = new Set(selectedArtworks);
+          // First deselect all from this page
+          data.forEach((item) => newSet.delete(item.id));
+          // Now add the freshly selected items
+          e.value.forEach((item) => newSet.add(item.id));
+          setSelectedArtworks(newSet);
+        }}
+        dataKey="id"
+        // showSelectAll={false}
       >
+        <Column
+          header={
+            <span style={{ cursor: "pointer" }} onClick={(e) => op.current?.toggle(e)}>
+                ▼
+              </span>
+            // <div style={{ display: "flex", flexDirection: "row-reverse", alignItems: "center", gap: "0.25rem" }}>
+            //   {/* <input
+            //     type="checkbox"
+            //     checked={data.every((item) => selectedArtworks.has(item.id))}
+            //     onChange={toggleSelectAllPage}
+            //   /> */}
+              
+            // </div>
+          }
+          selectionMode="multiple"
+          headerStyle={{ width: "3rem" }}
+        ></Column>
+
         {columns.map(({ field, header }) => (
           <Column key={field} field={field} header={header} />
         ))}
       </DataTable>
+
+      <OverlayPanel ref={op}>
+        <div style={{ padding: "10px", width: "200px" }}>
+          <p style={{ fontWeight: 600, marginBottom: "6px" }}>Select Multiple Rows</p>
+          <p style={{ fontSize: "12px", marginBottom: "8px" }}>Enter number of rows to select on this page</p>
+
+          <input
+            type="number"
+            placeholder="e.g. 5"
+            min={1}
+            max={paginationData.limit}
+            value={rowsToSelect}
+            onChange={(e) => setRowsToSelect(Number(e.target.value))}
+            style={{ width: "100%", padding: "6px" }}
+          />
+
+          <button style={{ marginTop: "10px", width: "100%" }} onClick={() => selectNArtworks(rowsToSelect)}>
+            Select
+          </button>
+        </div>
+      </OverlayPanel>
     </div>
   );
 };
