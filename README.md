@@ -12,7 +12,7 @@ A React + TypeScript web app built for the **GrowMeOrganic Private Limited** to 
 
 ## Tech Stack
 
-* React + TypeScript
+* React + TypeScript + Zod
 * PrimeReact (DataTable + OverlayPanel)
 * REST API (Art Institute of Chicago API)
 * Netlify
@@ -44,6 +44,7 @@ App runs at:
 ## Features
 
 * Server‑side pagination
+* Complete type support and type validation through Zod and TypeScript
 * Select rows on current page
 * Select **N rows** across multiple pages (without prefetching)
 * Persist selection across page navigation (storing only ids, not whole objects)
