@@ -71,7 +71,8 @@ const Table = ({
     op.current?.hide();
   };
 
-  // Custom pagination, also cant really be taken out without major refactoring
+  // Custom pagination, it is used as a parameter in the component below so I feel like it is justifiable to keep it here
+  // But I would think of other options if I had more time
   const paginatorTemplate = {
     layout: "CurrentPageReport PrevPageLink PageLinks NextPageLink",
     CurrentPageReport: () => {
