@@ -10,6 +10,8 @@ function App() {
   const [paginationData, setPaginationData] = useState<PaginatorType | null>(null);
   const [selectedArtworks, setSelectedArtworks] = useState<Set<number>>(new Set());
 
+  const [selectionPlan, setSelectionPlan] = useState<Map<number, number>>(new Map());
+
   useEffect(() => {
     const loadData = async () => {
       const result = await artworkService.fetchData(page);
@@ -24,7 +26,16 @@ function App() {
 
   return (
     <>
-      <Table page={page} data={data} paginationData={paginationData} setPage={setPage} selectedArtworks={selectedArtworks} setSelectedArtworks={setSelectedArtworks}/>
+      <Table
+        page={page}
+        data={data}
+        paginationData={paginationData}
+        setPage={setPage}
+        selectedArtworks={selectedArtworks}
+        setSelectedArtworks={setSelectedArtworks}
+        selectionPlan={selectionPlan}
+        setSelectionPlan={setSelectionPlan}
+      />
     </>
   );
 }

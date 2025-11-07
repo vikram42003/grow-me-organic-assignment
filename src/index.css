@@ -16,7 +16,6 @@
   background: #4f63da;
   color: white;
   border: #4f63da;
-  cursor: none;
 }
 
 .pagination-button-disabled {
@@ -27,4 +26,13 @@
 
 #table > div.p-paginator {
   margin: 1.5rem 0;
+}
+
+/* This CSS rule is for making the down arrow be positioned to the right of the checkbox */
+.p-datatable .p-selection-column .p-column-header-content {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 4px;
 }
